@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: mcp-gateway-jdk
+  ai:
+    mcp:
+      client:
+        streamable-http:
+          connections:
+            demo:
+              url: http://localhost:3001/mcp
+      server:
+        protocol: STREAMABLE   # Streamable HTTP（SSE 已废弃）；选 STATELESS 则无状态
+        type: SYNC             # SYNC（默认）/ ASYNC，决定注解方法用同步还是响应式
+        name: pacvue-mcp-gateway
+        version: 1.0.0
+        annotation-scanner:
+          enabled: true        # 自动扫描 @McpTool 注解的 bean（默认开启）
+
+gateway:
+  upstreams:
+    - alias: ads
+      url: http://localhost:8081/mcp
+      transport: streamable-http
+      timeout: 10s
+      required-scope: ads.read
+      tools:
+        include: [query_campaign, list_campaigns]
+      enabled: true
+      auth:
+        type: header
+        name: X-Api-Key
+        value: ${ADS_MCP_KEY:placeholder}
+
+    - alias: report
+      url: http://localhost:8082/mcp
+      transport: streamable-http
+      timeout: 30s
+      required-scope: report.read
+      tools:
+        include: [export_report]
+      enabled: true
+      auth:
+        type: none
