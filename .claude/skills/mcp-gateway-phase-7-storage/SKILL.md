@@ -87,3 +87,53 @@ description: 在 Phase 6 可观测与流控就绪之后使用。落地存储选�
 
 - 能力清单：§可观测性与流控（日志脱敏）——审计字段约束来源
 - Spring AI Vector Store（pgvector）：<https://docs.spring.io/spring-ai/reference/api/vectordbs/pgvector.html>
+
+---
+
+## 实际实现记录（已完成）
+
+### 包结构
+```
+com.pacvue.mcpgty.repository
+├── AuditRecord.java            # JPA 实体
+└── AuditRecordRepository.java  # JpaRepository
+```
+
+### 审计表字段
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| id | Long | 自增主键 |
+| trace_id | String | 调用追踪 ID |
+| caller_tenant | String | 租户 ID |
+| alias | String | 下游别名 |
+| tool | String | 工具名 |
+| outcome | String | success / client_error / upstream_error |
+| duration_ms | Long | 耗时（毫秒） |
+| request_summary | String | 字段名+长度（脱敏） |
+| error_code | String | 错误码 |
+| created_at | Instant | 创建时间 |
+
+### 配置
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mcp_gateway
+    username: songchenyang
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+  data:
+    redis:
+      host: localhost
+      port: 6379
+```
+
+### 踩坑记录
+- **JPA ddl-auto: update**：开发阶段自动建表，生产改成 validate
+- **审计写入失败不影响主流程**：try-catch 包住，打印日志但不抛异常
+
+### 面试亮点
+- **为什么审计不存 arguments 原文？** 脱敏，防止敏感信息泄露
+- **为什么同步写审计？** 初版简单，后续可换队列异步
+- **为什么 JPA ddl-auto: update？** 开发阶段自动建表，生产改成 validate

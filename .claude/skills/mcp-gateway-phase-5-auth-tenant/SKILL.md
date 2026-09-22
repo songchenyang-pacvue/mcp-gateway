@@ -84,3 +84,41 @@ public record CallerContext(
 
 - 能力清单：§鉴权与租户隔离（两条链路差异表、CallerContext、租户维度可见性、凭证注入下游）
 - 能力清单：§初版范围边界（不做外网 OAuth / 多租户 scope 过滤后置）
+
+---
+
+## 实际实现记录（已完成）
+
+### 包结构
+```
+com.pacvue.mcpgty.auth
+├── CallerContext.java          # record: tenantId / principal / scopes
+├── CallerContextHolder.java   # ThreadLocal
+└── ApiKeyFilter.java           # extends OncePerRequestFilter
+```
+
+### 核心实现
+- **CallerContext**：record，三个字段 tenantId / principal / scopes
+- **CallerContextHolder**：ThreadLocal 存当前请求身份
+- **ApiKeyFilter**：extends OncePerRequestFilter，校验 X-Api-Key
+- **SecurityProperties**：@ConfigurationProperties("gateway.security")，含 enabled + apiKeys(Map)
+
+### 配置
+```yaml
+gateway:
+  security:
+    enabled: true
+    api-keys:
+      sk-demo-001: tenant-001
+      sk-demo-002: tenant-002
+```
+
+### 踩坑记录
+- **@Value SpEL 解析 Map 失败**：改用 @ConfigurationProperties 绑定
+- **403 vs 401**：ApiKey 失败用 403，不带 WWW-Authenticate，避免触发 OAuth 握手
+- **ThreadLocal 清理**：过滤器 finally 清理，防止线程复用泄漏
+
+### 面试亮点
+- **为什么用 CallerContext 统一身份？** OAuth 和 ApiKey 最终都解析成同一个对象，下游代码不关心鉴权来源
+- **为什么用 403 不用 401？** 403 不触发客户端的 OAuth 握手流程
+- **为什么 Key 存哈希？** 数据库泄露不泄露原始 Key（对齐工程经验）

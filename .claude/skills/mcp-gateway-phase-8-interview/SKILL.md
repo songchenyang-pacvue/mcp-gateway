@@ -82,3 +82,28 @@ description: 在全部功能阶段完成后使用。把工程整理成可面试�
 ## 参考
 
 - 能力清单：§定位与架构、§初版范围边界（做/不做，面试里"为什么不做"也是加分点）
+
+---
+
+## 实际实现记录（已完成）
+
+### 交付物
+| 文件 | 用途 |
+|---|---|
+| `README.md` | 项目架构 + 快速开始 |
+| `docs/interview.md` | 30 秒讲稿 + 10 个高频追问答案 |
+
+### 面试亮点
+- **为什么用 Spring AI 2.0？** 最新版本，原生支持 MCP 协议，不用自己写协议层
+- **为什么手写熔断不用 Resilience4j？** 手写能讲清状态机原理，面试加分
+- **为什么同步写审计？** 初版简单，后续可换队列异步——诚实说取舍比硬吹强
+- **为什么用双下划线命名？** MCP 命名规范限制，按第一个 `__` 切分
+
+### 项目整体架构
+```
+客户端 → ApiKeyFilter → RateLimiter → CircuitBreaker → ToolRegistry → 下游
+         ↓              ↓             ↓              ↓
+       CallerContext   令牌桶       三档状态机     ConcurrentHashMap
+         ↓              ↓             ↓              ↓
+       ThreadLocal     tenantId     UP/DEGRADED/DOWN  alias__tool
+```

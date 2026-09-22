@@ -1,6 +1,6 @@
 # MCP Gateway 能力清单（初版）
 
-2026-09-21 · @Chneyang Song
+2026-09-21 · @Chenyang Song
 
 技术栈：Spring Boot 4.1.1 + Spring AI 2.0.0 + JDK 25 LTS
 

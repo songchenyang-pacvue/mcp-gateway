@@ -95,3 +95,42 @@ description: 在 Phase 5 鉴权就绪之后使用。实现可观测性与流控�
 
 - 能力清单：§可观测性与流控（指标表、调用链、日志脱敏）
 - 能力清单：§默认参数（限流/并发/响应体上限/重试）
+
+---
+
+## 实际实现记录（已完成）
+
+### 包结构
+```
+com.pacvue.mcpgty
+├── observability/
+│   └── GatewayMetrics.java       # Micrometer 三个指标
+└── flow/
+    └── RateLimiter.java           # 令牌桶限流
+```
+
+### 三个指标
+| 指标 | 类型 | 标签 | 语义 |
+|---|---|---|---|
+| gateway.tool.calls | Counter | alias/tool/outcome | 工具调用计数 |
+| gateway.upstream.latency | Timer | alias | 下游调用耗时 |
+| gateway.upstream.state | Gauge | alias | 熔断状态（UP=0/DEGRADED=1/DOWN=2） |
+
+### 令牌桶限流
+- 容量：60 个 token
+- 补充：每秒 1 个（60次/分钟）
+- 维度：按 tenantId
+- 超限：返回 RATE_LIMITED 错误码
+
+### 日志脱敏
+- 不打印完整 arguments
+- 只打印 argsLen=N（字段数）
+
+### 踩坑记录
+- **AtomicInteger::new 编译错误**：computeIfAbsent 需要 Function<String, AtomicInteger>，用 lambda 替代
+- **Gauge 注册时机**：第一次调用时才创建 Gauge，不能在构造函数里注册（那时 MeterRegistry 还没准备好）
+
+### 面试亮点
+- **为什么用 Micrometer 埋点？** 不绑定具体监控系统，Prometheus/Datadog 随便切
+- **为什么手写令牌桶不用 Guava？** 手写能讲清原理，面试加分
+- **为什么日志不打 arguments？** AI 调用参数可能含用户隐私，只记长度

@@ -1,6 +1,18 @@
 spring:
   application:
     name: mcp-gateway-jdk
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mcp_gateway
+    username: songchenyang
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
   ai:
     mcp:
       client:
@@ -41,3 +53,18 @@ gateway:
       enabled: true
       auth:
         type: none
+
+  security:
+    enabled: true   # 本地调试默认关闭，生产改 true
+    api-keys:
+      sk-demo-001: tenant-001
+      sk-demo-002: tenant-002
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
